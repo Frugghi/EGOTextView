@@ -251,9 +251,8 @@ static CGFloat AttachmentRunDelegateGetWidth(void *refCon) {
     _font = font;
     
     CTFontRef ctFont = CTFontCreateWithName((__bridge CFStringRef) self.font.fontName, self.font.pointSize, NULL);
-    NSDictionary *dictionary = [[NSDictionary alloc] initWithObjectsAndKeys:
-                                (__bridge id)ctFont, (NSString *)kCTFontAttributeName,
-                                (id)[UIColor blackColor].CGColor, (NSString *)kCTForegroundColorAttributeName, nil];
+    NSDictionary *dictionary = @{(NSString *)kCTFontAttributeName: (__bridge id)ctFont,
+                                (NSString *)kCTForegroundColorAttributeName: (id)[UIColor blackColor].CGColor};
     self.defaultAttributes = dictionary;
     CFRelease(ctFont);
 }
@@ -375,7 +374,7 @@ static CGFloat AttachmentRunDelegateGetWidth(void *refCon) {
         _tokenizer = [[UITextInputStringTokenizer alloc] initWithTextInput:self];
         _textChecker = [[UITextChecker alloc] init];
         
-        NSDictionary *dictionary = [[NSDictionary alloc] initWithObjectsAndKeys:[UIColor redColor], EGOTextSpellCheckingColor, nil];
+        NSDictionary *dictionary = @{EGOTextSpellCheckingColor: [UIColor redColor]};
         self.correctionAttributes = dictionary;
     } else {
         if (_caretView) {
@@ -417,7 +416,7 @@ static CGFloat AttachmentRunDelegateGetWidth(void *refCon) {
 		_language = language;
 	} else {
 		_localizationBundle = [NSBundle mainBundle];
-		_language = [[[NSUserDefaults standardUserDefaults] objectForKey:@"AppleLanguages"] objectAtIndex:0];
+		_language = [[NSUserDefaults standardUserDefaults] objectForKey:@"AppleLanguages"][0];
     }
 }
 
@@ -435,7 +434,7 @@ static CGFloat AttachmentRunDelegateGetWidth(void *refCon) {
 
 - (void)keyboardWillShow:(NSNotification *)notification {
 	NSDictionary *userInfo = [notification userInfo];
-	CGRect keyboardFrame = [[userInfo objectForKey:UIKeyboardFrameEndUserInfoKey] CGRectValue];
+	CGRect keyboardFrame = [userInfo[UIKeyboardFrameEndUserInfoKey] CGRectValue];
 	CGRect ownFrame = [[[[UIApplication sharedApplication] delegate] window] convertRect:self.frame fromView:self.superview];    
 	CGRect coveredFrame = CGRectIntersection(ownFrame, keyboardFrame);
 	coveredFrame = [[[[UIApplication sharedApplication] delegate] window] convertRect:coveredFrame toView:self.superview];
@@ -572,7 +571,7 @@ static CGFloat AttachmentRunDelegateGetWidth(void *refCon) {
 
 - (void)setSearchRanges:(NSArray *)searchRanges {
     if (!searchRanges) {
-        searchRanges = [NSArray array];
+        searchRanges = @[];
     }
     
     if (![_searchRanges isEqualToArray:searchRanges]) {
@@ -875,7 +874,7 @@ static CGFloat AttachmentRunDelegateGetWidth(void *refCon) {
 }
 
 - (NSArray *)selectionRectsForRange:(UITextRange *)range {
-    return [NSArray array];
+    return @[];
 }
 
 - (UIView *)textInputView {
@@ -930,24 +929,24 @@ static CGFloat AttachmentRunDelegateGetWidth(void *refCon) {
     
     NSMutableDictionary *uiStyles = [[NSMutableDictionary alloc] initWithDictionary:ctStyles];
     
-    CTFontRef ctFont = (__bridge CTFontRef)[ctStyles objectForKey:(id)kCTFontAttributeName];
+    CTFontRef ctFont = (__bridge CTFontRef)ctStyles[(id)kCTFontAttributeName];
     if (ctFont) {
         CFStringRef fontName = CTFontCopyPostScriptName(ctFont);
         UIFont *uif = [UIFont fontWithName:(__bridge id)fontName size:CTFontGetSize(ctFont)];
         if (!uif) {
             uif = [UIFont fontWithName:@"Helvetica Neue" size:CTFontGetSize(ctFont)];
         }
-        [uiStyles setObject:uif forKey:UITextInputTextFontKey];
+        uiStyles[UITextInputTextFontKey] = uif;
         CFRelease(fontName);
     }
     
-    CGColorRef cgColor = (__bridge CGColorRef)[ctStyles objectForKey:(id)kCTForegroundColorAttributeName];
+    CGColorRef cgColor = (__bridge CGColorRef)ctStyles[(id)kCTForegroundColorAttributeName];
     if (cgColor) {
-        [uiStyles setObject:[UIColor colorWithCGColor:cgColor] forKey:UITextInputTextColorKey];
+        uiStyles[UITextInputTextColorKey] = [UIColor colorWithCGColor:cgColor];
     }
     
     if (self.backgroundColor) {
-        [uiStyles setObject:self.backgroundColor forKey:UITextInputTextBackgroundColorKey];
+        uiStyles[UITextInputTextBackgroundColorKey] = self.backgroundColor;
     }
     
     return uiStyles;
@@ -960,7 +959,24 @@ static CGFloat AttachmentRunDelegateGetWidth(void *refCon) {
 }
 
 - (void)insertText:(NSString *)text {
-    if (!text || [text length] == 0) return;
+    if (!text) {
+        return;
+    }
+    
+    if (_replaceTable) {
+        NSMutableString *tempText = [[NSMutableString alloc] initWithString:text];
+        for (NSString *key in _replaceTable) {
+            [tempText replaceOccurrencesOfString:key
+                                      withString:_replaceTable[key]
+                                         options:NSLiteralSearch
+                                           range:NSMakeRange(0, tempText.length)];
+        }
+        text = [tempText copy];
+    }
+    
+    if ([text length] == 0) {
+        return;
+    }
     
     NSMutableDictionary *attributes = nil;
     if (self.textLength > 0) {
@@ -984,7 +1000,7 @@ static CGFloat AttachmentRunDelegateGetWidth(void *refCon) {
         [self insertString:newString atIndex:self.selectedRange.location];
     }
     	
-    if (text.length > 1 || [[NSCharacterSet whitespaceAndNewlineCharacterSet] characterIsMember:[text characterAtIndex:0]]) {
+    if (text.length > 1 || (text.length == 1 && [[NSCharacterSet whitespaceAndNewlineCharacterSet] characterIsMember:[text characterAtIndex:0]])) {
         [self checkLinksForRange:NSMakeRange(0, self.textLength)];
     }
 }
@@ -1002,7 +1018,7 @@ static CGFloat AttachmentRunDelegateGetWidth(void *refCon) {
 	
     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(showCorrectionMenuWithoutSelection) object:nil];
     
-    NSString *text = self.text;
+    NSString *text = [self.text copy];
     
     if (self.correctionRange.location != NSNotFound && self.correctionRange.length > 0) {
 		if ((_correctionRange.location == 0 || [whitespaceSet characterIsMember:[text characterAtIndex:_correctionRange.location-1]]) && (_correctionRange.location+_correctionRange.length >= text.length || [characterSet characterIsMember:[text characterAtIndex:_correctionRange.location+_correctionRange.length]])) {
@@ -1242,7 +1258,7 @@ static CGFloat AttachmentRunDelegateGetWidth(void *refCon) {
     if (!(self.dataDetectorTypes & UIDataDetectorTypeLink)) {
         return;
     }
-    NSDictionary *linkAttributes = [NSDictionary dictionaryWithObjectsAndKeys:(id)[UIColor blueColor].CGColor, kCTForegroundColorAttributeName, [NSNumber numberWithInt:(int)kCTUnderlineStyleSingle], kCTUnderlineStyleAttributeName, nil];
+    NSDictionary *linkAttributes = @{(id)kCTForegroundColorAttributeName: (id)[UIColor blueColor].CGColor, (id)kCTUnderlineStyleAttributeName: @((int)kCTUnderlineStyleSingle)};
     
     NSError *error = nil;
 	NSDataDetector *linkDetector = [NSDataDetector dataDetectorWithTypes:NSTextCheckingTypeLink error:&error];
@@ -1372,7 +1388,7 @@ static CGFloat AttachmentRunDelegateGetWidth(void *refCon) {
     }
 
     __block BOOL  needsDisplay = NO;
-    NSString *string = self.text;
+    NSString *string = [self.text copy];
     NSCharacterSet *characterSet = [NSCharacterSet whitespaceAndNewlineCharacterSet];
     NSRange startRange = [_textContentView characterRangeAtIndex:range.location +
                           ([characterSet characterIsMember:[string characterAtIndex:range.location]] ? 1 : 0)];
@@ -1862,7 +1878,7 @@ static CGFloat AttachmentRunDelegateGetWidth(void *refCon) {
             NSString *selString = [NSString stringWithFormat:@"spellCheckMenu_%i:", [word hash]];
             SEL sel = sel_registerName([selString UTF8String]);
             
-            [self.menuItemActions setObject:word forKey:NSStringFromSelector(sel)];
+            (self.menuItemActions)[NSStringFromSelector(sel)] = word;
             class_addMethod([self class], sel, [[self class] instanceMethodForSelector:@selector(spellingCorrection:)], "v@:@");
             
             UIMenuItem *item = [[UIMenuItem alloc] initWithTitle:word action:sel];
@@ -1874,7 +1890,7 @@ static CGFloat AttachmentRunDelegateGetWidth(void *refCon) {
         [menuController setMenuItems:items];
     } else {
         UIMenuItem *item = [[UIMenuItem alloc] initWithTitle:EGOLocalizedString(@"NO_REPLACE", @"No replacements found") action:@selector(spellCheckMenuEmpty:)];
-        [menuController setMenuItems:[NSArray arrayWithObject:item]];
+        [menuController setMenuItems:@[item]];
     }
     [menuController setMenuVisible:YES animated:YES];
 }
@@ -1906,7 +1922,7 @@ static CGFloat AttachmentRunDelegateGetWidth(void *refCon) {
     } else if ((action == @selector(_select:) || action == @selector(_selectAll:))) {
         return (_selectedRange.length == 0 && [self hasText]);
     } else if (action == @selector(_paste:)) {
-        return (_editing && [[UIPasteboard generalPasteboard] containsPasteboardTypes:[NSArray arrayWithObject:(id)kUTTypeText]]);
+        return (_editing && [[UIPasteboard generalPasteboard] containsPasteboardTypes:@[(id)kUTTypeText]]);
     } else if (action == @selector(_delete:)) {
         return (_selectedRange.location != NSNotFound && _selectedRange.length > 0);
     } else if (action == @selector(_showTextStyleOptions:)) {
@@ -1929,7 +1945,7 @@ static CGFloat AttachmentRunDelegateGetWidth(void *refCon) {
         replacementRange = [_textContentView characterRangeAtIndex:self.selectedRange.location];
     }
     if (replacementRange.location != NSNotFound && replacementRange.length != 0) {
-        NSString *text = [self.menuItemActions objectForKey:NSStringFromSelector(_cmd)];
+        NSString *text = (self.menuItemActions)[NSStringFromSelector(_cmd)];
         [self replaceRange:[EGOIndexedRange rangeWithNSRange:replacementRange] withText:text];
     }
     

@@ -60,10 +60,7 @@ static const NSTimeInterval kBlinkRate = 1.0;
 
 - (void)delayBlink {
     CAKeyframeAnimation *animation = [CAKeyframeAnimation animationWithKeyPath:@"opacity"];
-    [animation setValues:@[[NSNumber numberWithFloat:1.0f],
-                           [NSNumber numberWithFloat:1.0f],
-                           [NSNumber numberWithFloat:0.0f],
-                           [NSNumber numberWithFloat:0.0f]]];
+    [animation setValues:@[@1.0f, @1.0f, @0.0f, @0.0f]];
     [animation setCalculationMode:kCAAnimationCubic];
     [animation setDuration:kBlinkRate];
     [animation setBeginTime:CACurrentMediaTime() + kInitialBlinkDelay];

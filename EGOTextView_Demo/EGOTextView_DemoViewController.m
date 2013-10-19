@@ -19,7 +19,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    UISegmentedControl *segment = [[UISegmentedControl alloc] initWithItems:[NSArray arrayWithObjects:@"UITextView", @"EGOTextView", nil]];
+    UISegmentedControl *segment = [[UISegmentedControl alloc] initWithItems:@[@"UITextView", @"EGOTextView"]];
     segment.segmentedControlStyle = UISegmentedControlStyleBar;
     [segment addTarget:self action:@selector(segmentChanged:) forControlEvents:UIControlEventValueChanged];
     self.navigationItem.titleView = segment;

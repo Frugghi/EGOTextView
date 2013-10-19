@@ -92,8 +92,8 @@
     if ([keyPath isEqualToString:@"frame"]) {
         CGRect oldFrame = CGRectNull;
         CGRect newFrame = CGRectNull;
-        if([change objectForKey:@"old"] != [NSNull null]) {
-            oldFrame = [[change objectForKey:@"old"] CGRectValue];
+        if(change[@"old"] != [NSNull null]) {
+            oldFrame = [change[@"old"] CGRectValue];
         }
         if([object valueForKeyPath:keyPath] != [NSNull null]) {
             newFrame = [[object valueForKeyPath:keyPath] CGRectValue];
@@ -226,7 +226,7 @@
     
     CGMutablePathRef path = CGPathCreateMutable();
     
-    CGRect firstRect = CGRectFromString([array objectAtIndex:0]);
+    CGRect firstRect = CGRectFromString(array[0]);
     CGRect lastRect = CGRectFromString([array lastObject]);
     if ([array count] > 1) {
         firstRect.size.width = self.bounds.size.width-firstRect.origin.x;
@@ -327,7 +327,7 @@
             //CTLineDraw(line.rawLine, ctx);
             
             for (CFIndex runsIndex = 0; runsIndex < [line.runsArray count]; runsIndex++) {
-                CTRunRef run = (__bridge CTRunRef)[line.runsArray objectAtIndex:runsIndex];
+                CTRunRef run = (__bridge CTRunRef)(line.runsArray)[runsIndex];
                 
                 if (_textView.drawDelegate) {
                     [_textView.drawDelegate egoTextView:_textView drawBeforeGlyphRun:run forLine:line.rawLine withOrigin:line.origin inContext:ctx];
@@ -349,7 +349,7 @@
                 }
                 
                 CFDictionaryRef attributes = CTRunGetAttributes(run);
-                id <EGOTextAttachmentCell> attachmentCell = [(__bridge id)attributes objectForKey:EGOTextAttachmentAttributeName];
+                id <EGOTextAttachmentCell> attachmentCell = ((__bridge id)attributes)[EGOTextAttachmentAttributeName];
                 if (attachmentCell && [attachmentCell respondsToSelector:@selector(egoAttachmentSize)] && [attachmentCell respondsToSelector:@selector(egoAttachmentDrawInRect:)]) {
                     CGPoint position;
                     CTRunGetPositions(run, CFRangeMake(0, 1), &position);
@@ -400,7 +400,7 @@
             CGContextSetLineWidth(ctx, dotRadius);
             CGContextSetLineDash(ctx, 0.0f, dashes, 2);
             
-            UIColor *correctionColor = [_textView.correctionAttributes objectForKey:EGOTextSpellCheckingColor];
+            UIColor *correctionColor = (_textView.correctionAttributes)[EGOTextSpellCheckingColor];
             
             CGContextSetStrokeColorWithColor(ctx, [(correctionColor ? correctionColor : [UIColor redColor]) CGColor]);
             CGContextAddPath(ctx, path);
@@ -640,7 +640,7 @@
 }
 
 - (CGRect)caretRectForIndex:(NSInteger)inIndex {
-    NSString *text = [_textView text];
+    NSString *text = [[_textView text] copy];
     __block CGRect returnRect = CGRectZero;
     
     dispatch_block_t block = ^{
@@ -783,7 +783,7 @@
                     // Current line was found : calculate the new position
                     if (line && (line.index - offset) >= 0) {
                         CGFloat xOffsetToPosition = CTLineGetOffsetForStringIndex(line.rawLine, position, NULL);
-                        return CTLineGetStringIndexForPosition([[_lines objectAtIndex:line.index - offset] rawLine],
+                        return CTLineGetStringIndexForPosition([_lines[line.index - offset] rawLine],
                                                                CGPointMake(xOffsetToPosition, 0.0f));
                     } else {
                         return 0;
@@ -800,7 +800,7 @@
                     // Current line was found : calculate the new position
                     if (line && (line.index + offset) < [_lines count]) {
                         CGFloat xOffsetToPosition = CTLineGetOffsetForStringIndex(line.rawLine, position, NULL);
-                        return CTLineGetStringIndexForPosition([[_lines objectAtIndex:line.index + offset] rawLine],
+                        return CTLineGetStringIndexForPosition([_lines[line.index + offset] rawLine],
                                                                CGPointMake(xOffsetToPosition, 0.0f));
                     }
                     break;

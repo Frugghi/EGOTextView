@@ -77,6 +77,8 @@ extern NSString * const EGOTextViewLocalizationTable;
 
 @property (nonatomic, strong, readonly) NSUndoManager *undoManager;
 
+@property (nonatomic, copy) NSDictionary *replaceTable;
+
 @property (nonatomic, weak) id <EGOTextViewDelegate> delegate;
 @property (nonatomic, weak) id <EGOTextViewDrawDelegate> drawDelegate;
 @property (nonatomic, copy) NSAttributedString *attributedText;
